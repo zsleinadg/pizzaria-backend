@@ -1,0 +1,30 @@
+# Dependências
+node_modules/
+dist/
+build/
+
+# Variáveis de Ambiente (Segurança)
+.env
+.env.local
+.env.sample
+# Caso queira deixar um exemplo sem as senhas reais, crie um .env.example e não o ignore.
+
+# Prisma e Banco de Dados
+/src/generated/prisma
+*.db
+*.db-journal
+
+# Logs e Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Sistema Operacional e IDEs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Arquivos temporários do TypeScript
+tsconfig.tsbuildinfo
