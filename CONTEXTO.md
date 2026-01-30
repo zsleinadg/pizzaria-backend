@@ -53,9 +53,27 @@ backend/
 │   ├── @types/               # Definições de tipos TypeScript
 │   │   └── express/
 │   │       └── index.d.ts    # Extensão do tipo Request do Express
+│   ├── config/               # Configurações de serviços externos (ex: Cloudinary)
+│   │   ├── cloudinary.ts
+│   │   └── multer.ts
 │   ├── controllers/          # Controllers (camada de controle)
 │   │   ├── category/
-│   │   │   └── create-category-controller.ts
+│   │   │   ├── create-category-controller.ts
+│   │   │   └── list-category-controller.ts
+│   │   ├── order/
+│   │   │   ├── add-item-order-controller.ts
+│   │   │   ├── create-order-controller.ts
+│   │   │   ├── delete-item-order-controller.ts
+│   │   │   ├── delete-order-controller.ts
+│   │   │   ├── detail-order-controller.ts
+│   │   │   ├── finish-order-controller.ts
+│   │   │   ├── list-order-controller.ts
+│   │   │   └── send-order-controller.ts
+│   │   ├── product/
+│   │   │   ├── create-product-controller.ts
+│   │   │   ├── disable-product-controller.ts
+│   │   │   ├── list-product-byCategory-controller.ts
+│   │   │   └── list-product-controller.ts
 │   │   └── user/
 │   │       ├── auth-user-controller.ts
 │   │       ├── create-user-controller.ts
@@ -69,10 +87,27 @@ backend/
 │   ├── routes.ts             # Definição de todas as rotas
 │   ├── schemas/              # Schemas de validação Zod
 │   │   ├── categorySchema.ts
+│   │   ├── orderSchema.ts
+│   │   ├── productSchema.ts
 │   │   └── userSchema.ts
 │   ├── services/             # Services (lógica de negócio)
 │   │   ├── category/
-│   │   │   └── create-category-service.ts
+│   │   │   ├── create-category-service.ts
+│   │   │   └── list-category-service.ts
+│   │   ├── order/
+│   │   │   ├── add-item-order-service.ts
+│   │   │   ├── create-order-service.ts
+│   │   │   ├── delete-item-order-service.ts
+│   │   │   ├── delete-order-service.ts
+│   │   │   ├── detail-order-service.ts
+│   │   │   ├── finish-order-service.ts
+│   │   │   ├── list-order-service.ts
+│   │   │   └── send-order-service.ts
+│   │   ├── product/
+│   │   │   ├── create-product-service.ts
+│   │   │   ├── disable-product-service.ts
+│   │   │   ├── list-product-byCategory-service.ts
+│   │   │   └── list-product-service.ts
 │   │   └── user/
 │   │       ├── auth-user-service.ts
 │   │       ├── create-user-service.ts
@@ -102,6 +137,8 @@ backend/
 | **cors** | ^2.8.5 | Middleware CORS |
 | **dotenv** | ^17.2.3 | Gerenciamento de variáveis de ambiente |
 | **tsx** | ^4.21.0 | Executor TypeScript |
+| **multer** | ^1.4.5-lts.1 | Middleware para upload de arquivos |
+| **cloudinary** | ^1.41.0 | Serviço de armazenamento e gerenciamento de imagens |
 
 ### Dependências de Desenvolvimento
 
@@ -113,6 +150,7 @@ backend/
 | **@types/cors** | ^2.8.19 | Tipos TypeScript para CORS |
 | **@types/jsonwebtoken** | ^9.0.10 | Tipos TypeScript para JWT |
 | **@types/pg** | ^8.16.0 | Tipos TypeScript para PostgreSQL |
+| **@types/multer** | ^1.4.11 | Tipos TypeScript para Multer |
 
 ### Runtime e Ambiente
 
@@ -333,7 +371,108 @@ O middleware `validateSchema` valida:
 }
 ```
 
-### Resposta de Erro de Validação
+#### 3. Product Schemas (`productSchema.ts`)
+
+**createProductSchema:**
+```typescript
+{
+  body: {
+    name: string (obrigatório)
+    price: string (número, obrigatório)
+    description: string (obrigatório)
+    category_id: string (UUID, obrigatório)
+  }
+}
+```
+
+**listProductSchema:**
+```typescript
+{
+  query: {
+    disabled: "true" | "false" (opcional, padrão "false")
+  }
+}
+```
+
+**listProductByCategorySchema:**
+```typescript
+{
+  query: {
+    category_id: string (UUID, obrigatório)
+  }
+}
+```
+
+#### 4. Order Schemas (`orderSchema.ts`)
+
+**createOrderSchema:**
+```typescript
+{
+  body: {
+    table: number (inteiro positivo, obrigatório)
+    name: string (opcional)
+  }
+}
+```
+
+**addItemOrderSchema:**
+```typescript
+{
+  body: {
+    order_id: string (UUID, obrigatório)
+    product_id: string (UUID, obrigatório)
+    amount: number (inteiro positivo, obrigatório)
+  }
+}
+```
+
+**deleteItemOrderSchema:**
+```typescript
+{
+  query: {
+    item_id: string (UUID, obrigatório)
+  }
+}
+```
+
+**detailOrderSchema:**
+```typescript
+{
+  query: {
+    order_id: string (UUID, obrigatório)
+  }
+}
+```
+
+**sendOrderSchema:**
+```typescript
+{
+  body: {
+    name: string (opcional)
+    order_id: string (UUID, obrigatório)
+  }
+}
+```
+
+**finishOrderSchema:**
+```typescript
+{
+  body: {
+    order_id: string (UUID, obrigatório)
+  }
+}
+```
+
+**deleteOrderSchema:**
+```typescript
+{
+  query: {
+    order_id: string (UUID, obrigatório)
+  }
+}
+```
+
+### Respostas de Erro de Validação
 
 Quando a validação falha, o middleware retorna:
 
@@ -452,6 +591,372 @@ http://localhost:3333
     "id": "uuid",
     "name": "string",
     "createdAt": "datetime"
+  }
+  ```
+
+#### 2. Listar Categorias
+- **Método**: `GET`
+- **Rota**: `/category`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**: Nenhum
+- **Resposta de Sucesso** (200):
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "string",
+      "createdAt": "datetime"
+    }
+  ]
+  ```
+
+### Endpoints de Produto
+
+#### 1. Criar Produto
+- **Método**: `POST`
+- **Rota**: `/product`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Autorização**: Apenas ADMIN (`isAdmin`)
+- **Upload de Arquivo**: Requer `multer` para `file`
+- **Validação**: `createProductSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  Content-Type: multipart/form-data
+  ```
+- **Body (form-data)**:
+  ```
+  name: string (obrigatório)
+  price: string (número, obrigatório)
+  description: string (obrigatório)
+  category_id: string (UUID, obrigatório)
+  file: File (imagem, obrigatório)
+  ```
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "name": "string",
+    "price": "number",
+    "description": "string",
+    "category_id": "uuid",
+    "banner": "string (URL)",
+    "createdAt": "datetime",
+    "id": "uuid"
+  }
+  ```
+
+#### 2. Listar Produtos
+- **Método**: `GET`
+- **Rota**: `/products`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `disabled`: `boolean` (opcional, padrão `false`). Ex: `/products?disabled=true`
+- **Resposta de Sucesso** (200):
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "string",
+      "price": "number",
+      "description": "string",
+      "banner": "string (URL)",
+      "disabled": "boolean",
+      "category_id": "uuid",
+      "createdAt": "datetime",
+      "category": {
+        "id": "uuid",
+        "name": "string"
+      }
+    }
+  ]
+  ```
+
+#### 3. Desabilitar Produto
+- **Método**: `DELETE`
+- **Rota**: `/product`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Autorização**: Apenas ADMIN (`isAdmin`)
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `product_id`: `string` (UUID do produto a ser desabilitado)
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "message": "Product successfully disabled"
+  }
+  ```
+
+#### 4. Listar Produtos por Categoria
+- **Método**: `GET`
+- **Rota**: `/category/product`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `category_id`: `string` (UUID da categoria, obrigatório)
+- **Resposta de Sucesso** (200):
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "string",
+      "price": "number",
+      "description": "string",
+      "banner": "string (URL)",
+      "disabled": "boolean",
+      "category_id": "uuid",
+      "createdAt": "datetime",
+      "category": {
+        "id": "uuid",
+        "name": "string"
+      }
+    }
+  ]
+  ```
+
+### Endpoints de Pedido
+
+#### 1. Criar Pedido
+- **Método**: `POST`
+- **Rota**: `/order`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `createOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Body**:
+  ```json
+  {
+    "table": "number (inteiro positivo)",
+    "name": "string (opcional)"
+  }
+  ```
+- **Resposta de Sucesso** (201):
+  ```json
+  {
+    "id": "uuid",
+    "table": "number",
+    "name": "string | null",
+    "status": "boolean",
+    "draft": "boolean",
+    "createdAt": "datetime"
+  }
+  ```
+
+#### 2. Listar Pedidos
+- **Método**: `GET`
+- **Rota**: `/orders`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `draft`: `boolean` (opcional, padrão `false`). Ex: `/orders?draft=true`
+- **Resposta de Sucesso** (200):
+  ```json
+  [
+    {
+      "id": "uuid",
+      "name": "string | null",
+      "table": "number",
+      "status": "boolean",
+      "draft": "boolean",
+      "createdAt": "datetime",
+      "items": [
+        {
+          "id": "uuid",
+          "amount": "number",
+          "product": {
+            "id": "uuid",
+            "name": "string",
+            "price": "number",
+            "description": "string",
+            "banner": "string (URL)"
+          }
+        }
+      ]
+    }
+  ]
+  ```
+
+#### 3. Adicionar Item ao Pedido
+- **Método**: `POST`
+- **Rota**: `/order/add`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `addItemOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Body**:
+  ```json
+  {
+    "order_id": "string (UUID)",
+    "product_id": "string (UUID)",
+    "amount": "number (inteiro positivo)"
+  }
+  ```
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "amount": "number",
+    "id": "uuid",
+    "order_id": "uuid",
+    "product_id": "uuid",
+    "createdAt": "datetime",
+    "product": {
+      "id": "uuid",
+      "name": "string",
+      "price": "number",
+      "description": "string",
+      "banner": "string (URL)"
+    }
+  }
+  ```
+
+#### 4. Remover Item do Pedido
+- **Método**: `DELETE`
+- **Rota**: `/order/remove`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `deleteItemOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `item_id`: `string` (UUID do item a ser removido)
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "message": "Item successfully deleted"
+  }
+  ```
+
+#### 5. Detalhar Pedido
+- **Método**: `GET`
+- **Rota**: `/order/detail`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `detailOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `order_id`: `string` (UUID do pedido)
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "table": "number",
+    "name": "string | null",
+    "id": "uuid",
+    "status": "boolean",
+    "draft": "boolean",
+    "createdAt": "datetime",
+    "updatedAt": "datetime",
+    "items": [
+      {
+        "id": "uuid",
+        "amount": "number",
+        "createdAt": "datetime",
+        "product": {
+          "id": "uuid",
+          "name": "string",
+          "price": "number",
+          "description": "string",
+          "banner": "string (URL)"
+        }
+      }
+    ]
+  }
+  ```
+
+#### 6. Enviar Pedido
+- **Método**: `PUT`
+- **Rota**: `/order/send`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `sendOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Body**:
+  ```json
+  {
+    "order_id": "string (UUID)",
+    "name": "string (opcional)"
+  }
+  ```
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "id": "uuid",
+    "name": "string | null",
+    "table": "number",
+    "draft": "boolean",
+    "status": "boolean",
+    "createdAt": "datetime",
+    "updatedAt": "datetime"
+  }
+  ```
+
+#### 7. Finalizar Pedido
+- **Método**: `PUT`
+- **Rota**: `/order/finish`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `finishOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Body**:
+  ```json
+  {
+    "order_id": "string (UUID)"
+  }
+  ```
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "id": "uuid",
+    "name": "string | null",
+    "table": "number",
+    "draft": "boolean",
+    "status": "boolean",
+    "createdAt": "datetime",
+    "updatedAt": "datetime"
+  }
+  ```
+
+#### 8. Excluir Pedido
+- **Método**: `DELETE`
+- **Rota**: `/order`
+- **Autenticação**: Requerida (`isAuthenticated`)
+- **Validação**: `deleteOrderSchema`
+- **Headers**:
+  ```
+  Authorization: Bearer <token>
+  ```
+- **Query Params**:
+  - `order_id`: `string` (UUID do pedido a ser excluído)
+- **Resposta de Sucesso** (200):
+  ```json
+  {
+    "message": "Order successfully deleted"
   }
   ```
 
@@ -652,7 +1157,7 @@ const prismaClient = new PrismaClient({ adapter })
 
 ## 📅 Última Atualização
 
-**Data**: 25 de Janeiro de 2026
+**Data**: 30 de janeiro de 2026
 
 ---
 
