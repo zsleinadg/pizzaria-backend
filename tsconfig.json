@@ -5,7 +5,6 @@
     "module": "commonjs",                          // Sistema de módulos (CommonJS para Node.js)
     "lib": ["ES2020"],                             // Bibliotecas de tipos incluídas
     "moduleResolution": "node",                    // Estratégia de resolução de módulos (Node.js)
-    "ignoreDeprecations": "6.0",                   // Silencia warnings de features deprecated no TS 6.0
     
     // Diretórios
     "outDir": "./dist",                            // Pasta de saída dos arquivos compilados
