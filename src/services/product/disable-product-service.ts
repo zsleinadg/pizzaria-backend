@@ -6,20 +6,23 @@ interface DisableProductProps {
 
 class DisableProductService {
     async execute({ product_id }: DisableProductProps) {
-        try {
-            await prismaClient.product.update({
-                where: {
-                    id: product_id
-                },
-                data: {
-                    disabled: true
-                }
-            })
-            return { message: "Product successfully disabled" }
+        const product = await prismaClient.product.findUnique({
+            where: { id: product_id }
+        })
+
+        if (!product) {
+            throw new Error("Product not found")
         }
-        catch (error) {
-            throw new Error("Failed to disable product")
-        }
+
+        await prismaClient.product.update({
+            where: {
+                id: product_id
+            },
+            data: {
+                disabled: true
+            }
+        })
+        return { message: "Product successfully disabled" }
     }
 }
 

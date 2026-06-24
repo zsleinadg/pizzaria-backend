@@ -16,13 +16,13 @@ class AuthUserService {
             }
         })
         if (!user) {
-            throw new Error("The email/password is required!")
+            throw new Error("Invalid email or password")
         }
 
         const passwordMatch = await compare(password, user.password)
 
         if (!passwordMatch) {
-            throw new Error("The email/password is required!")
+            throw new Error("Invalid email or password")
         }
 
         const token = sign({

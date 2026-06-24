@@ -23,3 +23,9 @@ export const listProductByCategorySchema = z.object({
         category_id: z.string({ message: "The category_id is required!" })
     })
 })
+
+export const disableProductSchema = z.object({
+    query: z.object({
+        product_id: z.string({ message: "The product_id is required!" })
+    })
+})

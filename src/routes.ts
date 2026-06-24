@@ -3,7 +3,7 @@ import multer from "multer";
 import uploadConfig from "./config/multer"
 import { CreateUserController } from "./controllers/user/create-user-controller";
 import { AuthUserController } from "./controllers/user/auth-user-controller";
-import { DetailUserController } from "./controllers/user/detail.user-controller";
+import { DetailUserController } from "./controllers/user/detail-user-controller";
 import { validateSchema } from "./middlewares/validateSchema";
 import { authUserSchema, createUserSchema } from "./schemas/userSchema";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
@@ -12,7 +12,7 @@ import { isAdmin } from "./middlewares/isAdmin";
 import { createCategorySchema } from "./schemas/categorySchema";
 import { ListCategoryController } from "./controllers/category/list-category-controller";
 import { CreateProductController } from "./controllers/product/create-product-controller";
-import { createProductSchema, listProductByCategorySchema, listProductSchema } from "./schemas/productSchema";
+import { createProductSchema, disableProductSchema, listProductByCategorySchema, listProductSchema } from "./schemas/productSchema";
 import { ListProductController } from "./controllers/product/list-product-controller";
 import { DisableProductController } from "./controllers/product/disable-product-controller";
 import { ListProductByCategoryController } from "./controllers/product/list-product-byCategory-controller";
@@ -46,7 +46,7 @@ router.post("/product", isAuthenticated, isAdmin, upload.single("file"), validat
 
 router.get("/products", isAuthenticated, validateSchema(listProductSchema), new ListProductController().handle)
 
-router.delete("/product", isAuthenticated, isAdmin, new DisableProductController().handle)
+router.delete("/product", isAuthenticated, isAdmin, validateSchema(disableProductSchema), new DisableProductController().handle)
 
 router.get("/category/product", isAuthenticated, validateSchema(listProductByCategorySchema), new ListProductByCategoryController().handle)
 
