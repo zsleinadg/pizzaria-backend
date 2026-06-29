@@ -11,6 +11,9 @@ class ListOrderService {
             where: {
                 draft: draft === "true" ? true : false
             },
+            orderBy: {
+                createdAt: "desc"
+            },
             select: {
                 id: true,
                 name: true,
