@@ -30,7 +30,7 @@ class CreateProductService {
         try {
             const result = await new Promise<any>((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream({
-                    folder: "products",
+                    folder: "pizzaflow",
                     resource_type: "image",
                     public_id: `${Date.now()}-${imageName.split(".")[0]}`
                 }, (error, result) => {
